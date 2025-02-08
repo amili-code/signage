@@ -1,0 +1,234 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">پلی لیست</li>
+        <li class="breadcrumb-item ">لیست پلی لیست های مناسبتی</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid">
+                <input type="text" id="searchInput" class="form-control mb-3" placeholder="جستجو بر اساس نام...">
+                <br>
+                <div class="card">
+                    <div class="card-header">
+                        <strong>لیست رویدادها</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>نام</th>
+                                    <th onclick="sortTable('shamsiDate')" style="cursor:pointer">تاریخ شمسی</th>
+                                    <th>فعال</th>
+                                    <th>پلی‌لیست</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventTableBody"></tbody>
+                        </table>
+                        <div style="text-align: center;">
+                            <div id="pagination" class="pagination" ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal for editing playlist -->
+<div class="modal fade" id="playlistModal" tabindex="-1" role="dialog" aria-labelledby="playlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playlistModalLabel">انتخاب پلی‌لیست</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <select id="playlistSelect" class="form-control">
+                    <!-- گزینه‌های پلی‌لیست‌ها در اینجا قرار می‌گیرند -->
+                </select>
+            </div>
+            <div class="modal-footer" >
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-primary" id="savePlaylistButton">ذخیره</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let eventsData = [];
+    let currentPage = 1;
+    const rowsPerPage = 5;
+
+    async function fetchAndRenderEvents() {
+        try {
+            const response = await fetch("http://localhost:5000/api/eventSchedule");
+            if (!response.ok) throw new Error("دریافت اطلاعات رویدادها ناموفق بود!");
+
+            eventsData = await response.json();
+            renderTable();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    function renderTable() {
+        const tableBody = document.getElementById("eventTableBody");
+        if (!tableBody) {
+            console.error("Element with id 'eventTableBody' not found.");
+            return;
+        }
+        tableBody.innerHTML = "";
+
+        let filteredData = searchEvents(eventsData);
+        let paginatedData = paginate(filteredData);
+
+        paginatedData.forEach(async event => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${event.name}</td>
+                <td>${event.shamsiDate}</td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" ${event.enabled ? 'checked' : ''} onchange="toggleEvent(${event.id}, this.checked)">
+                    </div>
+                </td>
+                <td>${event.enabled ? await getPlaylistName(event.playlistId) : '-'}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        renderPagination(filteredData.length);
+    }
+
+    function searchEvents(data) {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        return data.filter(event => event.name.toLowerCase().includes(searchInput));
+    }
+
+    function paginate(data) {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return data.slice(start, end);
+    }
+
+    function renderPagination(totalItems) {
+        const totalPages = Math.ceil(totalItems / rowsPerPage);
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement("li");
+            li.className = `page-item ${i === currentPage ? "active" : ""}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+            pagination.appendChild(li);
+        }
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        renderTable();
+    }
+
+    function sortTable(column) {
+        eventsData.sort((a, b) => a[column] > b[column] ? 1 : -1);
+        renderTable();
+    }
+
+    async function getPlaylistName(playlistId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/${playlistId}`);
+            if (!response.ok) throw new Error("دریافت پلی‌لیست ناموفق بود!");
+            const playlist = await response.json();
+            console.log(playlist.name);
+            return playlist.name;
+        } catch (error) {
+            console.log(error.message);
+            return '-';
+        }
+    }
+
+    async function toggleEvent(eventId, enabled) {
+        if (enabled) {
+            // نمایش مودال برای انتخاب پلی‌لیست
+            await showPlaylistModal(eventId);
+        } else {
+            // غیرفعال کردن رویداد
+            await updateEvent(eventId, false, null);
+        }
+    }
+
+    async function showPlaylistModal(eventId) {
+        try {
+            const response = await fetch("http://localhost:5000/api/playlist");
+            if (!response.ok) throw new Error("دریافت پلی‌لیست‌ها ناموفق بود!");
+
+            const playlists = await response.json();
+            const specialPlaylists = playlists.filter(playlist => playlist.type === 'special');
+
+            const playlistOptions = specialPlaylists.map(playlist => `
+                <option value="${playlist.id}">${playlist.name}</option>
+            `).join("");
+
+            const playlistSelect = document.getElementById('playlistSelect');
+            if (!playlistSelect) {
+                console.error("Element with id 'playlistSelect' not found.");
+                return;
+            }
+            playlistSelect.innerHTML = playlistOptions;
+
+            const playlistModal = document.getElementById('playlistModal');
+            if (!playlistModal) {
+                console.error("Element with id 'playlistModal' not found.");
+                return;
+            }
+            playlistModal.dataset.eventId = eventId;
+            $('#playlistModal').modal('show');
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    async function updateEvent(eventId, enabled, playlistId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/eventSchedule/${eventId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ enabled, playlistId }),
+            });
+
+            if (!response.ok) throw new Error("بروزرسانی رویداد ناموفق بود!");
+
+            const updatedEvent = await response.json();
+            fetchAndRenderEvents();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    document.getElementById('savePlaylistButton').addEventListener('click', async function () {
+        const playlistModal = document.getElementById('playlistModal');
+        if (!playlistModal) {
+            console.error("Element with id 'playlistModal' not found.");
+            return;
+        }
+        const eventId = playlistModal.dataset.eventId;
+        const playlistId = document.getElementById('playlistSelect').value;
+        await updateEvent(eventId, true, playlistId);
+        $('#playlistModal').modal('hide');
+    });
+
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+
+    fetchAndRenderEvents();
+</script>
+
+<%- include('./layout/footer'); %>

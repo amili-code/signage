@@ -1,0 +1,199 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">گزارشات</li>
+        <li class="breadcrumb-item">گزارشات پلیرها</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id="playerList">
+                <input type="text" id="searchInput"
+                    class="form-control mb-3 input-sm"
+                    placeholder="جستجو بر اساس عنوان پلیر..."
+                    oninput="renderTable()">
+                <br>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-align-justify"></i> جدول
+                        <strong>پلیرها</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>مک آدرس</th>
+                                    <th>عنوان پلیر</th>
+                                    <th>IP</th>
+                                    <th>تاریخ ایجاد</th>
+                                    <th>نمایش فعالیت‌ها</th>
+                                </tr>
+                            </thead>
+                            <tbody id="playerTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal for displaying player activity -->
+<div class="modal fade" id="activityModal" tabindex="-1" role="dialog"
+    aria-labelledby="activityModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activityModalLabel">فعالیت‌های
+                    پلیر</h5>
+                <button type="button" class="close" data-dismiss="modal"
+                    aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-header" id="lineChartTitle">
+                        Line Chart
+                        <div class="card-actions">
+                            <a href="http://www.chartjs.org">
+                                <small class="text-muted">docs</small>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-block">
+                        <div class="chart-wrapper">
+                            <canvas id="activityChart"></canvas>
+                            <p id="allView" style="text-align: center;"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let playerData = [];
+
+    async function fetchAndPopulateTable() {
+        try {
+            const response = await fetch("http://localhost:5000/api/player");
+            if (!response.ok) throw new Error("مشکلی در دریافت اطلاعات به وجود آمده است.");
+            playerData = await response.json();
+            renderTable();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    function renderTable() {
+        const tableBody = document.getElementById("playerTable");
+        tableBody.innerHTML = "";
+        playerData.forEach(player => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${player.mac}</td>
+                <td>${player.title}</td>
+                <td>${player.ip}</td>
+                <td>${convertToPersianDate(player.createdAt)}</td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="fetchPlayerActivity(${player.id})">نمایش فعالیت‌ها</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function convertToPersianDate(isoDate) {
+        const date = new Date(isoDate);
+        return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "long", day: "numeric" }).format(date);
+    }
+
+    async function fetchPlayerActivity(playerId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/view?playerid=${playerId}`);
+            if (!response.ok) throw new Error("خطا در دریافت فعالیت‌های پلیر");
+            const activityData = await response.json();
+            renderChart(activityData , playerId);
+            $('#activityModal').modal('show');
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+   function renderChart(data, playerId) {
+    console.log("داده‌های ورودی:", data);
+
+    // **فیلتر کردن داده‌ها برای فقط پلیری که ID مشخص شده دارد**
+    const filteredData = data.filter(item => item.player.id === playerId);
+
+    if (filteredData.length === 0) {
+        alert("برای این پلیر داده‌ای یافت نشد.");
+        return;
+    }
+
+    // پردازش داده‌ها برای جمع کردن تعداد پخش‌ها در هر روز
+    const playCountsByDate = {};
+
+    filteredData.forEach(item => {
+        const date = item.date;
+        if (!playCountsByDate[date]) {
+            playCountsByDate[date] = 0;
+        }
+        playCountsByDate[date] += item.playCount;
+    });
+
+    // نمایش عنوان پلیر
+    document.getElementById('lineChartTitle').textContent = filteredData[0].player.title;
+
+    // آماده‌سازی داده‌ها برای نمودار
+    const labels = Object.keys(playCountsByDate);
+    const values = Object.values(playCountsByDate);
+    let allView = values.reduce((sum, item) => sum + item, 0);
+
+    document.getElementById('allView').textContent = `تعداد کل برابر است با ${allView}`;
+    console.log("برچسب‌های تاریخ:", labels);
+    console.log("مقدارهای تعداد پخش:", values);
+
+    const ctx = document.getElementById("activityChart").getContext("2d");
+
+    // **حذف نمودار قبلی اگر وجود دارد**
+    if (window.chartInstance) {
+        window.chartInstance.destroy();
+    }
+
+    // ایجاد نمودار جدید
+    window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'تعداد پخش',
+                data: values,
+                borderWidth: 2,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                fill:false,
+
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'تاریخ' } }, 
+                y: { title: { display: true, text: 'تعداد پخش' },
+                    beginAtZero: true, // **اضافه شد: محور Y از صفر شروع شود**
+                    suggestedMin: 0 }
+            }
+        }
+    });
+}
+
+
+
+    fetchAndPopulateTable();
+</script>
+
+<%- include('./layout/footer'); %>

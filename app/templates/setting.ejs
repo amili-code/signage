@@ -1,0 +1,432 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">تنظیمات</li>
+        <li class="breadcrumb-item ">برنامه پخش</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid">
+                <div class="card">
+                    <div class="card-header" style="text-align: center;">
+                        <button id="prevMonth" class="btn btn-info">ماه قبل</button>
+                        <span id="currentMonthYear"></span>
+                        <button id="nextMonth" class="btn btn-info">ماه بعد</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="calendar"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row container-fluid mt-4">
+                <div class="card">
+                    <div class="card-header" style="text-align: center;">
+                        <h5>مدیریت بازه‌های زمانی</h5>
+                    </div>
+                    <div class="card-body container-fluid">
+                        <form id="timeRangeForm">
+                            <div class="form-group">
+                                <label for="dayOfWeek">روز هفته</label>
+                                <select id="dayOfWeek" class="form-control">
+                                    <option value="0">شنبه</option>
+                                    <option value="1">یک‌شنبه</option>
+                                    <option value="2">دوشنبه</option>
+                                    <option value="3">سه‌شنبه</option>
+                                    <option value="4">چهارشنبه</option>
+                                    <option value="5">پنج‌شنبه</option>
+                                    <option value="6">جمعه</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+    <label for="startTime">زمان شروع</label>
+    <input type="time" id="startTime" class="form-control" step="60">
+</div>
+<div class="form-group">
+    <label for="endTime">زمان پایان</label>
+    <input type="time" id="endTime" class="form-control" step="60">
+</div>
+                            <button type="button" class="btn btn-primary" id="saveTimeRangeButton" style="width: 100%;padding: .5rem;">ذخیره</button>
+                        </form>
+                        <div id="timeRangesList" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal for selecting playlist -->
+<div class="modal fade" id="playlistModal" tabindex="-1" role="dialog" aria-labelledby="playlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playlistModalLabel">انتخاب پلی‌لیست</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="currentPlaylistInfo"></div>
+                <select id="playlistSelect" class="form-control">
+                    <!-- گزینه‌های پلی‌لیست‌ها در اینجا قرار می‌گیرند -->
+                </select>
+            </div>
+            <div class="modal-footer" style="text-align: center;">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-primary" id="savePlaylistButton">ذخیره</button>
+                <div id="resultMessage" style="text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        padding: 20px;
+    }
+    .day {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+    }
+    .day:hover {
+        background-color: #f0f0f0;
+    }
+    .day.selected {
+        background-color: #007bff;
+        color: white;
+    }
+    .day .active-indicator {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: green;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 10px;
+    }
+    .day .today-indicator {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        background-color: blue;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 10px;
+    }
+    .time-range-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const calendarEl = document.getElementById('calendar');
+        const resultMessage = document.getElementById('resultMessage');
+        const currentMonthYearEl = document.getElementById('currentMonthYear');
+        let selectedDate = null;
+
+        // دریافت تاریخ امروز
+        const today = new Date();
+        const [todayJY, todayJM, todayJD] = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        const todayDate = `${todayJY}-${todayJM.toString().padStart(2, '0')}-${todayJD.toString().padStart(2, '0')}`;
+
+        // تنظیم ماه و سال فعلی
+        let currentMonth = todayJM;
+        let currentYear = todayJY;
+
+        // تابع تبدیل تاریخ میلادی به شمسی
+        function gregorianToJalali(gy, gm, gd) {
+            const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            let jy = (gy <= 1600) ? 0 : 979;
+            gy -= (gy <= 1600) ? 621 : 1600;
+            let gy2 = (gm > 2) ? (gy + 1) : gy;
+            let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+            jy += 33 * Math.floor(days / 12053);
+            days %= 12053;
+            jy += 4 * Math.floor(days / 1461);
+            days %= 1461;
+            jy += Math.floor((days - 1) / 365);
+            if (days > 365) days = (days - 1) % 365;
+            const jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+            const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+            return [jy, jm, jd];
+        }
+
+        function getDaysInMonth(month, year) {
+            if (month <= 6) {
+                return 31;
+            } else if (month <= 11) {
+                return 30;
+            } else {
+                return 29;
+            }
+        }
+
+        function renderCalendar() {
+            calendarEl.innerHTML = '';
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear); // تعداد روزهای ماه
+            currentMonthYearEl.textContent = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day';
+                dayEl.textContent = day;
+                const date = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                dayEl.dataset.date = date;
+
+                if (date === todayDate) {
+                    const todayIndicator = document.createElement('div');
+                    todayIndicator.className = 'today-indicator';
+                    todayIndicator.textContent = 'امروز';
+                    dayEl.appendChild(todayIndicator);
+                }
+
+                dayEl.addEventListener('click', function () {
+                    if (new Date(date) < new Date(todayDate)) {
+                        resultMessage.innerHTML = '<div class="alert alert-danger">از این روز گذشتیم</div>';
+                        return;
+                    }
+
+                    document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
+                    dayEl.classList.add('selected');
+                    selectedDate = dayEl.dataset.date;
+                    $('#playlistModal').modal('show');
+                    fetchScheduleForDate(selectedDate);
+                });
+                calendarEl.appendChild(dayEl);
+            }
+
+            fetchSchedules();
+        }
+
+        function updateCalendar() {
+            renderCalendar();
+        }
+
+        document.getElementById('prevMonth').addEventListener('click', function () {
+            if (currentMonth === 1) {
+                currentMonth = 12;
+                currentYear--;
+            } else {
+                currentMonth--;
+            }
+            updateCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', function () {
+            if (currentMonth === 12) {
+                currentMonth = 1;
+                currentYear++;
+            } else {
+                currentMonth++;
+            }
+            updateCalendar();
+        });
+
+        async function fetchSchedules() {
+            try {
+                const response = await fetch('http://localhost:5000/api/schedule');
+                if (!response.ok) throw new Error('دریافت برنامه‌های پخش ناموفق بود!');
+                const schedules = await response.json();
+
+                schedules.forEach(schedule => {
+                    const dayEl = document.querySelector(`.day[data-date="${schedule.date}"]`);
+                    if (dayEl) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'active-indicator';
+                        indicator.textContent = 'فعال';
+                        dayEl.appendChild(indicator);
+                    }
+                });
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        async function fetchScheduleForDate(date) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/schedule/${date}`);
+                if (!response.ok) throw new Error('دریافت برنامه پخش ناموفق بود!');
+                const schedules = await response.json();
+
+                const currentPlaylistInfo = document.getElementById('currentPlaylistInfo');
+                if (schedules.length > 0) {
+                    currentPlaylistInfo.innerHTML = schedules.map(schedule => `
+                        <div>
+                            پلی‌لیست فعلی: ${schedule.Playlist.name}
+                            <button class="btn btn-danger btn-sm" onclick="deletePlaylist(${schedule.id})">حذف</button>
+                        </div>
+                    `).join('');
+                } else {
+                    currentPlaylistInfo.innerHTML = 'هیچ پلی‌لیستی برای این روز فعال نیست.';
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        // دریافت پلی‌لیست‌ها و نمایش در مودال
+        async function fetchPlaylists() {
+            try {
+                const response = await fetch('http://localhost:5000/api/playlist');
+                if (!response.ok) throw new Error('دریافت پلی‌لیست‌ها ناموفق بود!');
+                const playlists = await response.json();
+
+                const playlistSelect = document.getElementById('playlistSelect');
+                playlistSelect.innerHTML = playlists.map(playlist => `
+                    <option value="${playlist.id}">${playlist.name}</option>
+                `).join('');
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        $('#playlistModal').on('show.bs.modal', fetchPlaylists);
+
+        // ذخیره برنامه پخش
+        document.getElementById('savePlaylistButton').addEventListener('click', async function () {
+            const playlistId = document.getElementById('playlistSelect').value;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ date: selectedDate, playlistId }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultMessage.innerHTML = '<div class="alert alert-success">برنامه پخش با موفقیت ذخیره شد.</div>';
+                    $('#playlistModal').modal('hide');
+                    updateCalendar();
+                } else {
+                    resultMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        });
+
+        // حذف برنامه پخش
+        async function deletePlaylist(scheduleId) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/schedule/${scheduleId}`, {
+                    method: 'DELETE',
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultMessage.innerHTML = '<div class="alert alert-success">برنامه پخش با موفقیت حذف شد.</div>';
+                    $('#playlistModal').modal('hide');
+                    updateCalendar();
+                } else {
+                    resultMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        window.deletePlaylist = deletePlaylist; // اضافه کردن تابع به window برای دسترسی در HTML
+
+        // مدیریت بازه‌های زمانی
+        async function fetchTimeRanges() {
+            try {
+                const response = await fetch('http://localhost:5000/api/timeranges');
+                if (!response.ok) throw new Error('دریافت بازه‌های زمانی ناموفق بود!');
+                const timeRanges = await response.json();
+
+                // مرتب‌سازی بازه‌های زمانی بر اساس روز و ساعت
+                timeRanges.sort((a, b) => {
+                    if (a.dayOfWeek === b.dayOfWeek) {
+                        return a.startTime.localeCompare(b.startTime);
+                    }
+                    return a.dayOfWeek - b.dayOfWeek;
+                });
+
+                const timeRangesList = document.getElementById('timeRangesList');
+                timeRangesList.innerHTML = timeRanges.map(timeRange => `
+                    <div class="time-range-item">
+    <span>روز: ${['شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'][timeRange.dayOfWeek]}</span>
+    <span>از ${timeRange.startTime} تا ${timeRange.endTime}</span>
+    <button class="btn btn-danger btn-sm" onclick="deleteTimeRange(${timeRange.id})">حذف</button>
+</div>
+                `).join('');
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        document.getElementById('saveTimeRangeButton').addEventListener('click', async function () {
+            const dayOfWeek = document.getElementById('dayOfWeek').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/timeranges', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ dayOfWeek, startTime, endTime }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultMessage.innerHTML = '<div class="alert alert-success">بازه‌ی زمانی با موفقیت ذخیره شد.</div>';
+                    fetchTimeRanges();
+                } else {
+                    resultMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        });
+
+        async function deleteTimeRange(id) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/timeranges/${id}`, {
+                    method: 'DELETE',
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultMessage.innerHTML = '<div class="alert alert-success">بازه‌ی زمانی با موفقیت حذف شد.</div>';
+                    fetchTimeRanges();
+                } else {
+                    resultMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        window.deleteTimeRange = deleteTimeRange; // اضافه کردن تابع به window برای دسترسی در HTML
+
+        renderCalendar();
+        fetchTimeRanges();
+    });
+</script>
+
+<%- include('./layout/footer'); %>

@@ -1,0 +1,225 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">پلیرها</li>
+        <li class="breadcrumb-item ">لیست پلیرها</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id="playerList">
+                <input type="text" id="searchInput" class="form-control mb-3 input-sm" placeholder="جستجو بر اساس عنوان پلیر..." oninput="renderTable()">
+                <br>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-align-justify"></i> جدول <strong>پلیرها</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>مک آدرس</th>
+                                    <th onclick="sortTable('title')" style="cursor:pointer">عنوان پلیر 🔽</th>
+                                    <th>IP</th>
+                                    <th onclick="sortTable('createdAt')" style="cursor:pointer">تاریخ ایجاد 🔽</th>
+                                    <th>ویرایش</th>
+                                    <th>حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="playerTable"></tbody>
+                        </table>
+                        <div class="row" style="text-align: center;">
+                            <ul id="pagination" class="pagination"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+</main>
+
+<!-- Modal for editing player title -->
+<div class="modal fade" id="editTitleModal" tabindex="-1" role="dialog" aria-labelledby="editTitleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTitleModalLabel">ویرایش عنوان پلیر</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="playerTitleInput" class="form-control" placeholder="عنوان جدید پلیر">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-primary" id="saveTitleButton">ذخیره</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let playerData = []; // ذخیره اطلاعات پلیرها
+    let currentPage = 1;
+    const rowsPerPage = 5; // تعداد پلیرها در هر صفحه
+    let currentEditPlayerId = null;
+
+    // دریافت داده‌ها از API و نمایش در جدول
+    async function fetchAndPopulateTable() {
+        try {
+            const response = await fetch("http://localhost:5000/api/player");
+            if (!response.ok) throw new Error("مشکلی در دریافت اطلاعات به وجود آمده است.");
+            playerData = await response.json();
+            renderTable();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    // نمایش داده‌ها در جدول
+    function renderTable() {
+        const tableBody = document.getElementById("playerTable");
+        tableBody.innerHTML = "";
+
+        let filteredData = searchPlayers(playerData);
+        let paginatedData = paginate(filteredData);
+
+        paginatedData.forEach(player => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${player.mac}</td>
+                <td>${player.title}</td>
+                <td>${player.ip}</td>
+                <td>${convertToPersianDate(player.createdAt)}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="openEditTitleModal(${player.id}, '${player.title}')">ویرایش</button>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deletePlayer(${player.id})">حذف</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        renderPagination(filteredData.length);
+    }
+
+    // تبدیل تاریخ میلادی به شمسی
+    function convertToPersianDate(isoDate) {
+        const date = new Date(isoDate);
+        return new Intl.DateTimeFormat("fa-IR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        }).format(date);
+    }
+
+    // حذف پلیر
+    async function deletePlayer(playerId) {
+        if (!confirm("آیا مطمئن هستید که می‌خواهید این پلیر را حذف کنید؟")) return;
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/player/${playerId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) throw new Error("حذف پلیر ناموفق بود!");
+
+            playerData = playerData.filter(player => player.id !== playerId);
+            renderTable(); // به‌روزرسانی جدول پس از حذف
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    // تابع مرتب‌سازی جدول
+    function sortTable(column) {
+        let order = column === "title" ? "asc" : "desc";
+
+        playerData.sort((a, b) => {
+            let valA = column === "title" ? a.title.toLowerCase() : new Date(a.createdAt);
+            let valB = column === "title" ? b.title.toLowerCase() : new Date(b.createdAt);
+
+            return order === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+        });
+
+        renderTable();
+    }
+
+    // تابع صفحه‌بندی داده‌ها
+    function paginate(data) {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return data.slice(start, end);
+    }
+
+    // تابع جستجوی پلیرها بر اساس عنوان
+    function searchPlayers(data) {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        return data.filter(player => player.title.toLowerCase().includes(searchInput));
+    }
+
+    // تابع تغییر صفحه
+    function changePage(page) {
+        currentPage = page;
+        renderTable();
+    }
+
+    // تابع نمایش صفحه‌بندی
+    function renderPagination(totalItems) {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        let totalPages = Math.ceil(totalItems / rowsPerPage);
+
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.innerHTML += `
+                <li class="page-item ${i === currentPage ? "active" : ""}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        }
+    }
+
+    // نمایش مودال ویرایش عنوان پلیر
+    function openEditTitleModal(playerId, currentTitle) {
+        currentEditPlayerId = playerId;
+        document.getElementById('playerTitleInput').value = currentTitle;
+        $('#editTitleModal').modal('show');
+    }
+
+    // ذخیره عنوان جدید پلیر
+    document.getElementById('saveTitleButton').addEventListener('click', async function () {
+        const newTitle = document.getElementById('playerTitleInput').value;
+        if (!newTitle || newTitle.trim() === "") {
+            alert("عنوان پلیر نمی‌تواند خالی باشد");
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/player/${currentEditPlayerId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ title: newTitle }),
+            });
+
+            if (!response.ok) throw new Error("بروزرسانی عنوان پلیر ناموفق بود!");
+
+            $('#editTitleModal').modal('hide');
+            fetchAndPopulateTable();
+        } catch (error) {
+            console.log(error.message);
+        }
+    });
+
+    // اجرای اولیه
+    fetchAndPopulateTable();
+</script>
+
+<%- include('./layout/footer'); %>

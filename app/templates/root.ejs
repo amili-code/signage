@@ -1,0 +1,475 @@
+<%- include('./layout/head'); %>
+<main class="main">
+
+    <!-- Breadcrumb -->
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">خانه</li>
+        <!-- <li class="breadcrumb-item"><a href="#">مدیریت</a></li> -->
+        <li class="breadcrumb-item active">داشبرد</li>
+
+        <!-- <li class="breadcrumb-menu">
+                <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
+                    <a class="btn btn-secondary" href="#"><i class="icon-speech"></i></a>
+                    <a class="btn btn-secondary" href="./"><i class="icon-graph"></i> &nbsp;داشبرد</a>
+                    <a class="btn btn-secondary" href="#"><i class="icon-settings"></i> &nbsp;تنظیمات</a>
+                </div>
+            </li> -->
+    </ol>
+
+    <div class="container-fluid">
+
+        <div class="animated fadeIn">
+            <div class="row">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-inverse card-primary">
+                        <div class="card-block p-b-0">
+                            <div class="btn-group pull-left">
+                                <button type="button"
+                                    class="btn btn-transparent active dropdown-toggle p-a-0"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <i class="icon-settings"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="#">ثبت کاربر
+                                        جدید</a>
+                                    <a class="dropdown-item" href="#">لیست
+                                        کاربران</a>
+                                    <a class="dropdown-item" href="#">دسترسی
+                                        کاربران</a>
+                                </div>
+                            </div>
+                            <h4 class="m-b-0" root="/user" method="GET"
+                                count="true">در حال بارگیری...</h4>
+                            <p>تعداد کل کاربران</p>
+                        </div>
+                        <div class="chart-wrapper p-x-1" style="height:70px;">
+                            <canvas id="card-chart1" class="chart"
+                                height="70"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!--/col-->
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-inverse card-info">
+                        <div class="card-block p-b-0">
+                            <div class="btn-group pull-left">
+                                <button type="button"
+                                    class="btn btn-transparent active dropdown-toggle p-a-0"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <i class="icon-settings"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="#">افزودن
+                                        ویدیو</a>
+                                    <a class="dropdown-item" href="#">لیست ویدیو
+                                        ها</a>
+                                </div>
+                            </div>
+                            <h4 class="m-b-0" root="/video" method="GET"
+                                count="true">در حال بارگیری...</h4>
+                            <p>تعداد ویدیو ها</p>
+                        </div>
+                        <div class="chart-wrapper p-x-1" style="height:70px;">
+                            <canvas id="card-chart2" class="chart"
+                                height="70"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!--/col-->
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-inverse card-warning">
+                        <div class="card-block p-b-0">
+                            <div class="btn-group pull-left">
+                                <button type="button"
+                                    class="btn btn-transparent active dropdown-toggle p-a-0"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <i class="icon-settings"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="#">پلی لیسیت
+                                        مناسبتی</a>
+                                    <a class="dropdown-item" href="#">پلی لیست
+                                        تبلیغاتی</a>
+                                    <a class="dropdown-item" href="#">پلی لیست
+                                        ویدیوها</a>
+                                </div>
+                            </div>
+                            <h4 class="m-b-0" root="/playlist" method="GET"
+                                count="true">در حال بارگیری...</h4>
+                            <p>تعداد پلی لیست ها</p>
+                        </div>
+                        <div class="chart-wrapper" style="height:70px;">
+                            <canvas id="card-chart3" class="chart"
+                                height="70"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!--/col-->
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-inverse card-danger">
+                        <div class="card-block p-b-0">
+                            <div class="btn-group pull-left">
+                                <button type="button"
+                                    class="btn btn-transparent active dropdown-toggle p-a-0"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <i class="icon-settings"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="#">افزودن
+                                        پلیر</a>
+                                    <a class="dropdown-item" href="#">لیست پلیر
+                                        ها</a>
+                                </div>
+                            </div>
+                            <h4 class="m-b-0" root="/playlist" method="GET"
+                                count="true">در حال بارگیری...</h4>
+                            <p>تعداد پلیر ها</p>
+                        </div>
+                        <div class="chart-wrapper p-x-1" style="height:70px;">
+                            <canvas id="card-chart4" class="chart"
+                                height="70"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!--/col-->
+
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6 col-md-6">
+                    <div
+                        class="card card-inverse card-success text-xs-center equal-height">
+                        <div class="card-block">
+                            <blockquote class="card-blockquote">
+                                <p id="currentDate" class="styled-text"></p>
+                                <footer id="currentTime"
+                                    class="styled-text"></footer>
+                            </blockquote>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6">
+                    <div
+                        class="card card-inverse card-info text-xs-center equal-height">
+                        <div class="card-block">
+                            <blockquote class="card-blockquote">
+                                <p>بازه‌های زمانی امروز</p>
+                                <div id="todayTimeRanges"></div>
+                                <p>پلی‌لیست‌های امروز</p>
+                                <div id="todayPlaylists"></div>
+                            </blockquote>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="card">
+                    <div class="card-header">
+                        ویرایش
+                        <strong>تنظیمات</strong>
+                    </div>
+                    <div class="card-block">
+                        <form id="configForm" class="form-horizontal"
+                            enctype="multipart/form-data">
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label"
+                                    for="text">متن</label>
+                                <div class="col-sm-6">
+                                    <input type="text" id="text" name="text"
+                                        class="form-control"
+                                        placeholder="متن را وارد کنید ...">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label"
+                                    for="text">لوگو ی قدیمی</label>
+                                <div class="col-sm-6">
+                                    <img id="currentLogo"
+                                        src="http://localhost:5000/api/config/pic/1.png"
+                                        alt="Current Logo"
+                                        style="max-width: 26rem; margin-top: 10px;">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label"
+                                    for="logo"> لوگو ی جدید</label>
+                                <div class="col-sm-6">
+                                    <button onclick="deleteLogo()">بدون
+                                        لوگو</button>
+                                </div>
+
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label"
+                                    for="logo"> لوگو ی جدید</label>
+                                <div class="col-sm-6">
+                                    <input type="file" id="logo"
+                                        accept="image/*" name="logo"
+                                        class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label"
+                                    for="status"> وضعیت خاموش و روشن</label>
+                                <div class="col-sm-6">
+                                    <input type="checkbox" id="status"
+                                        name="status">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit"
+                                class="btn btn-sm btn-primary"><i
+                                    class="fa fa-dot-circle-o"></i> ثبت
+                                اطلاعات</button>
+                            <button type="reset"
+                                class="btn btn-sm btn-danger"><i
+                                    class="fa fa-ban"></i> پاک کردن اطلاعات وارد
+                                شده</button>
+                        </div>
+                    </form>
+                    <div id="resultMessage" class="mt-3"></div>
+                </div>
+                <!-- <button type="button" class="btn btn-danger btn-lg btn-block">صفحه ی گزارشات رو چک کنید</button> -->
+            </div>
+
+        </div>
+        <!--/.container-fluid-->
+    </main>
+
+    <script>
+        async function deleteLogo(){
+            console.log("object");
+            const response = await fetch('http://localhost:5000/api/config', {
+                    method: 'DELETE',
+                });
+            location.reload();
+        }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const currentDateEl = document.getElementById('currentDate');
+        const currentTimeEl = document.getElementById('currentTime');
+        const todayTimeRangesEl = document.getElementById('todayTimeRanges');
+        const todayPlaylistsEl = document.getElementById('todayPlaylists');
+
+        // تابع تبدیل تاریخ میلادی به شمسی
+        function gregorianToJalali(gy, gm, gd) {
+            const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            let jy = (gy <= 1600) ? 0 : 979;
+            gy -= (gy <= 1600) ? 621 : 1600;
+            let gy2 = (gm > 2) ? (gy + 1) : gy;
+            let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+            jy += 33 * Math.floor(days / 12053);
+            days %= 12053;
+            jy += 4 * Math.floor(days / 1461);
+            days %= 1461;
+            jy += Math.floor((days - 1) / 365);
+            if (days > 365) days = (days - 1) % 365;
+            const jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+            const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+            return [jy, jm, jd];
+        }
+
+        // تابع تبدیل تاریخ میلادی به هجری قمری
+        function gregorianToHijri(gy, gm, gd) {
+            const jd = Math.floor((1461 * (gy + 4800 + Math.floor((gm - 14) / 12))) / 4) + Math.floor((367 * (gm - 2 - 12 * (Math.floor((gm - 14) / 12)))) / 12) - Math.floor((3 * (Math.floor((gy + 4900 + Math.floor((gm - 14) / 12)) / 100))) / 4) + gd - 32075;
+            const l = jd - 1948440 + 10632;
+            const n = Math.floor((l - 1) / 10631);
+            const r = l - 10631 * n + 354;
+            const j = (Math.floor((10985 - r) / 5316)) * (Math.floor((50 * r) / 17719)) + (Math.floor(r / 5670)) * (Math.floor((43 * r) / 15238));
+            const h = r - (Math.floor((30 - j) / 15)) * (Math.floor((17719 * j) / 50)) - (Math.floor(j / 16)) * (Math.floor((15238 * j) / 43)) + 29;
+            const m = Math.floor((24 * h) / 709);
+            const d = h - Math.floor((709 * m) / 24);
+            const y = 30 * n + j - 30;
+            return [y, m, d];
+        }
+
+        // دریافت روز هفته به فارسی
+        function getPersianDayOfWeek(day) {
+            const days = ['یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+            return days[day];
+        }
+
+        // به‌روزرسانی تاریخ و زمان
+        function updateDateTime() {
+            const today = new Date();
+            const [gy, gm, gd] = [today.getFullYear(), today.getMonth() + 1, today.getDate()];
+            const [jy, jm, jd] = gregorianToJalali(gy, gm, gd);
+            const [hy, hm, hd] = gregorianToHijri(gy, gm, gd);
+            const dayOfWeek = getPersianDayOfWeek(today.getDay());
+
+            currentDateEl.innerHTML = `
+                امروز: ${dayOfWeek}<br>
+                تاریخ میلادی: ${gy}/${gm.toString().padStart(2, '0')}/${gd.toString().padStart(2, '0')}<br>
+                تاریخ شمسی: ${jy}/${jm.toString().padStart(2, '0')}/${jd.toString().padStart(2, '0')}<br>
+                تاریخ هجری قمری: ${hy}/${hm.toString().padStart(2, '0')}/${hd.toString().padStart(2, '0')}
+            `;
+
+            const hours = today.getHours().toString().padStart(2, '0');
+            const minutes = today.getMinutes().toString().padStart(2, '0');
+            const seconds = today.getSeconds().toString().padStart(2, '0');
+            currentTimeEl.innerHTML = `ساعت: ${hours}:${minutes}:${seconds}`;
+        }
+
+        // به‌روزرسانی زمان هر ثانیه
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // دریافت بازه‌های زمانی امروز
+        async function fetchTodayTimeRanges() {
+            try {
+                const response = await fetch('http://localhost:5000/api/timeranges');
+                if (!response.ok) throw new Error('دریافت بازه‌های زمانی ناموفق بود!');
+                const timeRanges = await response.json();
+
+                const today = new Date();
+                const todayDayOfWeek = today.getDay();
+                // const todayRanges = timeRanges.filter(timeRange => timeRange.dayOfWeek === todayDayOfWeek);
+                let number = 0
+                switch (todayDayOfWeek) {
+                    case 1:
+                        number=2
+                        break;
+                    case 2:
+                        number=3
+                        break
+                    
+                    case 3: 
+                    number=4
+                    break
+
+                    case 4:
+                        number=5
+                        break
+
+                    case 5:
+                        number=6
+                        break
+                    case 6:
+                        number=0
+                        break
+                    case 7:
+                        number=1
+                        break
+                    default:
+                        break;
+                }
+
+                const todayRanges = timeRanges.filter(timeRange => timeRange.dayOfWeek === number);
+
+
+                if (todayRanges.length > 0) {
+                    todayTimeRangesEl.innerHTML = todayRanges.map(timeRange => `
+                        <div class="time-range-item">
+                            پلیرها از ${timeRange.startTime} تا ${timeRange.endTime} در حال پخش هستند.
+                        </div>
+                    `).join('');
+                } else {
+                    todayTimeRangesEl.innerHTML = '<div class="time-range-item">هیچ بازه زمانی برای امروز وجود ندارد.</div>';
+                }
+            } catch (error) {
+                todayTimeRangesEl.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        // دریافت پلی‌لیست‌های امروز
+        async function fetchTodayPlaylists() {
+            try {
+                const today = new Date();
+                const [jy, jm, jd] = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                const todayDate = `${jy}-${jm.toString().padStart(2, '0')}-${jd.toString().padStart(2, '0')}`;
+
+                const response = await fetch(`http://localhost:5000/api/schedule/${todayDate}`);
+                if (!response.ok) throw new Error('دریافت پلی‌لیست‌های امروز ناموفق بود!');
+                const schedules = await response.json();
+
+                if (schedules.length > 0) {
+                    todayPlaylistsEl.innerHTML = schedules.map(schedule => `
+                        <div class="time-range-item">
+                            پلی‌لیست: ${schedule.Playlist.name}
+                        </div>
+                    `).join('');
+                } else {
+                    todayPlaylistsEl.innerHTML = '<div class="time-range-item">هیچ پلی‌لیستی برای امروز وجود ندارد.</div>';
+                }
+            } catch (error) {
+                todayPlaylistsEl.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        }
+
+        fetchTodayTimeRanges();
+        fetchTodayPlaylists();
+    });
+</script>
+
+    <style>
+    .equal-height {
+        height: 100%;
+    }
+    .styled-text {
+        font-weight: bold;
+    }
+    .time-range-item {
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+    }
+</style>
+    <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const resultMessage = document.getElementById('resultMessage');
+
+        // دریافت اطلاعات کانفیگ و نمایش در فرم
+        try {
+            const response = await fetch('http://localhost:5000/api/config');
+            if (!response.ok) throw new Error('دریافت اطلاعات کانفیگ ناموفق بود!');
+            const config = await response.json();
+
+            document.getElementById('text').value = config[0].text;
+            document.getElementById('status').checked = config[0].status;
+            if (config[0].logo) {
+                // document.getElementById('currentLogo').src = `http://localhost:5000/${config[0].logo}`;
+            }
+        } catch (error) {
+            resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+        }
+
+        // ارسال فرم به صورت API
+        document.getElementById('configForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append('text', document.getElementById('text').value);
+            formData.append('status', document.getElementById('status').checked);
+            const logoFile = document.getElementById('logo').files[0];
+            if (logoFile) {
+                formData.append('logo', logoFile);
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/config', {
+                    method: 'PUT',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultMessage.innerHTML = '<div class="alert alert-success">تنظیمات با موفقیت ذخیره شد.</div>';
+                } else {
+                    resultMessage.innerHTML = `<div class="alert alert-danger">${result.error}</div>`;
+                }
+            } catch (error) {
+                resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+            }
+        });
+    });
+</script>
+
+    <%- include('./layout/footer'); %>

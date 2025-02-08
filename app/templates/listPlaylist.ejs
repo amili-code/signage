@@ -1,0 +1,449 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">پلی لیست</li>
+        <li class="breadcrumb-item ">لیست پلی لیست ها</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id="playlistList">
+                <input type="text" id="searchInput"
+                    class="form-control mb-3 input-sm"
+                    placeholder="جستجو بر اساس نام پلی لیست..."
+                    oninput="renderTable()">
+                <br>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-align-justify"></i> جدول
+                        <strong>پلی‌لیست‌ها</strong>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>نام</th>
+                                    <th>نوع</th>
+                                    <th onclick="sortTable('createdAt')"
+                                        style="cursor:pointer">تاریخ ایجاد
+                                        🔽</th>
+                                    <th>تعداد ویدیو</th>
+                                    <th>نمایش ویدیو ها</th>
+                                    <th>ویرایش</th>
+                                    <th>حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="playlistTable"></tbody>
+                        </table>
+                        <div class="row" style="text-align: center;">
+                            <ul id="pagination" class="pagination"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div id="videos">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal for editing playlist -->
+<div class="modal fade" id="editPlaylistModal" tabindex="-1" role="dialog"
+    aria-labelledby="editPlaylistModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPlaylistModalLabel">ویرایش
+                    پلی‌لیست</h5>
+                <button type="button" class="close" data-dismiss="modal"
+                    aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editPlaylistForm">
+                    <div class="form-group">
+                        <label for="playlistName">نام پلی‌لیست</label>
+                        <input type="text" class="form-control"
+                            id="playlistName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="playlistType">نوع پلی‌لیست</label>
+                        <select type="text" class="form-control"
+                            id="playlistType" required id="type" name="type"
+                            class="form-control">
+                            <option value="main">اصلی</option>
+                            <option value="ad">تبلیغاتی</option>
+                            <option value="special">مناسبتی</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">ذخیره
+                        تغییرات</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="addVideoModal" tabindex="-1" role="dialog" aria-labelledby="addVideoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addVideoModalLabel">افزودن ویدیو به پلی‌لیست</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="بستن">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modalVideoList">
+                <!-- ویدیوها در اینجا نمایش داده می‌شوند -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-primary" onclick="addSelectedVideos()">افزودن ویدیوهای انتخاب شده</button>
+                <div id="responseMsg"></div>    
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let playlistData = [];
+    let currentPage = 1;
+    const rowsPerPage = 5;
+    let currentEditPlaylistId = null;
+
+    async function fetchAndPopulateTable() {
+        try {
+            const response = await fetch("http://localhost:5000/api/playlist");
+            if (!response.ok) throw new Error("مشکلی در دریافت اطلاعات به وجود آمده است.");
+            playlistData = await response.json();
+            renderTable();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+      function renderTable() {
+        const tableBody = document.getElementById("playlistTable");
+        tableBody.innerHTML = "";
+
+        let filteredData = searchPlaylists(playlistData);
+        let paginatedData = paginate(filteredData);
+
+        paginatedData.forEach(playlist => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${playlist.name}</td>
+                <td>${convertPlaylistType(playlist.type)}</td>
+                <td>${convertToPersianDate(playlist.createdAt)}</td>
+                <td>${playlist.Videos.length}</td>
+                <td><button class="btn btn-info btn-sm" onclick="showVideos(${playlist.id})">نمایش ویدیو ها</button></td>
+                <td><button class="btn btn-warning btn-sm" onclick="openEditModal(${playlist.id})">ویرایش</button></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deletePlaylist(${playlist.id})">حذف</button></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        renderPagination(filteredData.length);
+    }
+
+    function convertPlaylistType(type) {
+        switch (type) {
+            case 'main':
+                return 'اصلی';
+            case 'ad':
+                return 'تبلیغاتی';
+            case 'special':
+                return 'مناسبتی';
+            default:
+                return type;
+        }
+    }
+
+    function convertToPersianDate(isoDate) {
+        const date = new Date(isoDate);
+        return new Intl.DateTimeFormat("fa-IR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        }).format(date);
+    }
+
+    async function deletePlaylist(playlistId) {
+        if (!confirm("آیا مطمئن هستید که می‌خواهید این پلی لیست را حذف کنید؟")) return;
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/${playlistId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) throw new Error("حذف پلی لیست ناموفق بود!");
+
+            playlistData = playlistData.filter(playlist => playlist.id !== playlistId);
+            renderTable();
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    function openEditModal(playlistId) {
+        const playlist = playlistData.find(playlist => playlist.id === playlistId);
+        if (!playlist) return;
+
+        currentEditPlaylistId = playlistId;
+        document.getElementById("playlistName").value = playlist.name;
+        document.getElementById("playlistType").value = playlist.type;
+        $('#editPlaylistModal').modal('show');
+        
+    }
+
+    document.getElementById("editPlaylistForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const name = document.getElementById("playlistName").value;
+        const type = document.getElementById("playlistType").value;
+        await updatePlaylist(currentEditPlaylistId, name, type);
+        $('#editPlaylistModal').modal('hide');
+    });
+
+    async function updatePlaylist(playlistId, name, type) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/${playlistId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name, type }),
+            });
+
+            if (!response.ok) throw new Error("بروزرسانی پلی‌لیست ناموفق بود!");
+
+            setTimeout(() => {
+                location.reload()
+            }, 1000)
+            const updatedPlaylist = await response.json();
+            const index = playlistData.findIndex(playlist => playlist.id === playlistId);
+            playlistData[index] = updatedPlaylist.playlist;
+            renderTable();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+ 
+    function showVideos(playlistId) {
+        const playlist = playlistData.find(playlist => playlist.id === playlistId);
+        if (!playlist) return;
+
+        
+
+         const sortedVideos = playlist.Videos.sort((a, b) => a.PlaylistVideo.order - b.PlaylistVideo.order);
+
+        const videoList = sortedVideos.map(video => `
+            <div class="video-item row" id="video-${video.id}" style="display: flex;flex-wrap: wrap; /* برای ریسپانسیو شدن */align-items: center;justify-content: space-between; /* تقسیم فضای مساوی بین آیتم‌ها */padding: 1rem;gap: 1rem;border: 1px solid #ddd;border-radius: 8px;background: #f9f9f9;margin-bottom: 10px;">
+                <img style="width:100px; height:auto;border-radius:5px;flex-shrink:0" src="http://localhost:5000/api/thumbnail/${video.originalName}" alt="${video.title}" />
+                <p style="margin:0;flex:1;min-width:100px">نام: ${video.title}</p>
+                <p style="margin:0;flex:1;min-width:100px">رزولوشن: ${video.resolution}</p>
+                <p style="margin:0;flex:1;min-width:100px">مدت زمان: ${video.duration}</p>
+                <button style="flex:1;min-width:80px" class="btn btn-secondary btn-sm" onclick="moveVideo(${playlistId}, ${video.id}, 'up')">⬆️</button>
+                <button style="flex:1;min-width:80px" class="btn btn-secondary btn-sm" onclick="moveVideo(${playlistId}, ${video.id}, 'down')">⬇️</button>
+                <button style="flex:1;min-width:80px" class="btn btn-danger btn-sm" onclick="removeVideo(${playlistId}, ${video.id})">حذف</button>
+            </div>
+        `).join("");
+
+        const addVideoForm = `
+            <div class="add-video-form">
+                <button style="width: 100%;padding: 1rem;" class="btn btn-primary btn-sm" onclick="addVideo(${playlistId})">افزودن ویدیو</button>
+            </div>
+        `;
+
+         const videoContainer = document.createElement("div");
+        videoContainer.innerHTML = `<h1 style="text-align: center;margin:1rem">ویدیو های ${playlist.name}</h1>` + videoList + addVideoForm;
+        const playlistElement = document.getElementById(`playlist-${playlistId}`);
+        if (playlistElement) {
+            playlistElement.innerHTML = ''; // Clear previous content
+            playlistElement.appendChild(videoContainer);
+        } else {
+            const newPlaylistElement = document.createElement("div");
+            newPlaylistElement.id = `playlist-${playlistId}`;
+            newPlaylistElement.innerHTML = videoContainer.innerHTML;
+            document.getElementById("videos").innerHTML=''
+            document.getElementById("videos").appendChild(newPlaylistElement);
+        }
+    }
+
+    async function moveVideo(playlistId, videoId, direction) {
+        const playlist = playlistData.find(playlist => playlist.id === playlistId);
+        if (!playlist) return;
+
+        const videoIndex = playlist.Videos.findIndex(video => video.id === videoId);
+        if (videoIndex === -1) return;
+
+        const targetIndex = direction === "up" ? videoIndex - 1 : videoIndex + 1;
+        if (targetIndex < 0 || targetIndex >= playlist.Videos.length) return;
+
+        // Swap videos in the playlist data
+        const temp = playlist.Videos[videoIndex];
+        playlist.Videos[videoIndex] = playlist.Videos[targetIndex];
+        playlist.Videos[targetIndex] = temp;
+
+        // Swap video elements in the DOM
+        const videoElement = document.getElementById(`video-${videoId}`);
+        const targetElement = document.getElementById(`video-${playlist.Videos[videoIndex].id}`);
+        if (direction === "up") {
+            targetElement.parentNode.insertBefore(videoElement, targetElement);
+        } else {
+            targetElement.parentNode.insertBefore(targetElement, videoElement);
+        }
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/update-order`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    playlistId,
+                    videos: playlist.Videos.map((video, index) => ({ videoId: video.id, order: index + 1 })),
+                }),
+            });
+
+            if (!response.ok) throw new Error("تغییر ترتیب ویدیوها ناموفق بود!");
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+    async function removeVideo(playlistId, videoId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/remove-video`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ playlistId, videoId }),
+            });
+
+            if (!response.ok) throw new Error("حذف ویدیو ناموفق بود!");
+
+            const playlist = playlistData.find(playlist => playlist.id === playlistId);
+            playlist.Videos = playlist.Videos.filter(video => video.id !== videoId);
+            document.getElementById(`video-${videoId}`).remove()
+            renderTable();
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+   async function addVideo(playlistId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/video`);
+            if (!response.ok) throw new Error("دریافت ویدیوها ناموفق بود!");
+
+            const videos = await response.json();
+            const playlist = playlistData.find(playlist => playlist.id === playlistId);
+            const availableVideos = videos.filter(video => !playlist.Videos.some(v => v.id === video.id));
+
+            const videoList = availableVideos.map(video => `
+                <div class="video-item row" id="video-${video.id}" style="display: flex;flex-wrap: wrap;align-items: center;justify-content: space-between;padding: 1rem;gap: 1rem;border: 1px solid #ddd;border-radius: 8px;background: #f9f9f9;margin-bottom: 10px;">
+                    <img style="width:100px; height:auto;border-radius:5px;flex-shrink:0" src="http://localhost:5000/api/thumbnail/${video.originalName}" alt="${video.title}" />
+                    <p style="margin:0;flex:1;min-width:100px">نام: ${video.title}</p>
+                    <p style="margin:0;flex:1;min-width:100px">رزولوشن: ${video.resolution}</p>
+                    <p style="margin:0;flex:1;min-width:100px">مدت زمان: ${video.duration}</p>
+                    <input type="checkbox" class="video-checkbox" value="${video.id}">
+                </div>
+            `).join("");
+
+            document.getElementById('modalVideoList').innerHTML = videoList;
+            document.getElementById('addVideoModal').setAttribute('data-id',playlistId)
+            $('#addVideoModal').modal('show');
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    async function addSelectedVideos() {
+        const selectedVideoIds = Array.from(document.querySelectorAll('.video-checkbox:checked')).map(checkbox => checkbox.value);
+        if (selectedVideoIds.length === 0) return;
+
+        const playlistId = document.getElementById('addVideoModal').getAttribute('data-id');
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/playlist/add-video`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ playlistId, videoIds: selectedVideoIds }),
+            });
+
+
+            
+            if (!response.ok) document.getElementById("responseMsg").innerHTML=`<p class='alert alert-danger'>مشکلی پیش امده است</p>`
+            else document.getElementById("responseMsg").innerHTML=`<p class='alert alert-success'>با موفقیت ویدیو اضافه شد</p>`
+            setTimeout(() => {
+                location.reload();
+            }, 1500)
+
+            const newVideos = await response.json();
+            const playlist = playlistData.find(playlist => playlist.id === playlistId);
+            playlist.Videos.push(...newVideos);
+            renderTable();
+            $('#addVideoModal').modal('hide');
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    function sortTable(column) {
+        let order = column === "title" ? "asc" : "desc";
+
+        playlistData.sort((a, b) => {
+            let valA = column === "title" ? a.title.toLowerCase() : new Date(a.createdAt);
+            let valB = column === "title" ? b.title.toLowerCase() : new Date(b.createdAt);
+
+            return order === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+        });
+
+        renderTable();
+    }
+
+    function paginate(data) {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return data.slice(start, end);
+    }
+
+    function searchPlaylists(data) {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        return data.filter(playlist => playlist.name.toLowerCase().includes(searchInput));
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        renderTable();
+    }
+
+    function renderPagination(totalItems) {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        let totalPages = Math.ceil(totalItems / rowsPerPage);
+
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.innerHTML += `
+                <li class="page-item ${i === currentPage ? "active" : ""}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        }
+    }
+
+    fetchAndPopulateTable();
+</script>
+
+<%- include('./layout/footer'); %>

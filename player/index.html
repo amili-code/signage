@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fa">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Digital Signage Player</title>
+        <style>
+        video { width: 100vw; height: 100vh; object-fit: cover; position: absolute; top: 0; left: 0; }
+        #playButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: block;
+        }
+        #subtitle {
+            position: absolute;
+            bottom: 10%;
+            width: 100%;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 20px;
+            display: none;
+        }
+        #logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 100px;
+            height: auto;
+            display: none;
+        }
+        #videoList {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            display: none;
+        }
+      </style>
+    </head>
+    <body>
+        <div id="controler">
+            <video id="videoPlayer" muted></video>
+        </div>
+        <button id="playButton">پخش</button>
+        <div id="subtitle"></div>
+        <img id="logo" src alt>
+        <div id="videoList"></div>
+        <div id="off"></div>
+        <script>
+    let videos = [];
+    let currentIndex = 0;
+    let playCount = 0;
+    let videoLength = 0;
+
+    const deviceInfo = {
+        macAddress: "00:1A:2B:3C:4D:5E",
+        ip: "192.168.1.1",
+        name: "Player-Device",
+        id: 6 // فرض می‌کنیم id پلیر در اینجا مشخص شده است
+    };
+    const videoPlayCounts = {};
+    
+function getPersianWeekdayNumber(date = new Date()) {
+    const days = {
+        'شنبه': 0,
+        'یکشنبه': 1,
+        'دوشنبه': 2,
+        'سه‌شنبه': 3,
+        'چهارشنبه': 4,
+        'پنج‌شنبه': 5,
+        'جمعه': 6
+    };
+
+    // دریافت نام روز به فارسی
+    const weekday = new Intl.DateTimeFormat('fa-IR', { weekday: 'long' }).format(date);
+
+    return days[weekday] ?? -1; // اگر مقدار نامعتبر باشد، مقدار -1 برمی‌گردد
+}
+
+// تست تابع
+    async function getTimeRanges() {
+    try {
+        // دریافت روز هفته به فارسی (0 = شنبه, 1 = یکشنبه, ... 6 = جمعه)
+        const dayOfWeek = getPersianWeekdayNumber();
+
+        // دریافت زمان فعلی ایران
+        const now = new Date();
+        const timeInIran = new Intl.DateTimeFormat('fa-IR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23',
+            timeZone: 'Asia/Tehran'
+        }).format(now);
+        // استخراج ساعت و دقیقه فعلی ایران
+
+        const timeIran = (convertPersianNumbersToEnglish(timeInIran));
+
+        const [currentHour, currentMinute] = timeIran.split(':').map(Number);
+        console.log(currentHour , currentMinute);
+        // دریافت اطلاعات از API
+        const response = await fetch('http://localhost:5000/api/timeranges');
+        const timeRanges = await response.json();
+
+        // پیدا کردن بازه زمانی مربوط به روز جاری
+        const todayRange = timeRanges.find(range => range.dayOfWeek === dayOfWeek);
+
+        if (!todayRange) return false; // اگر برای امروز بازه‌ای تعریف نشده، مقدار false برگردان
+
+        // استخراج ساعت و دقیقه شروع و پایان
+        const [startHour, startMinute] = todayRange.startTime.split(':').map(Number);
+        const [endHour, endMinute] = todayRange.endTime.split(':').map(Number);
+
+        // مقایسه اینکه آیا زمان فعلی بین startTime و endTime هست یا نه
+        const isWithinRange =
+            (currentHour > startHour || (currentHour === startHour && currentMinute >= startMinute)) &&
+            (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute));
+
+        return isWithinRange;
+    } catch (error) {
+        console.error('خطا در دریافت داده‌ها:', error);
+        return false;
+    }
+}
+
+    
+
+    function getPersianDate() {
+        const date = new Date();
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit', calendar: 'persian' };
+        return new Intl.DateTimeFormat('fa-IR', options).format(date).replace(/\/|\-/g, '-');
+    }
+
+    function convertPersianNumbersToEnglish(str) {
+        const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        return str.replace(/[۰-۹]/g, function (w) {
+            return englishNumbers[persianNumbers.indexOf(w)];
+        });
+    }
+
+    async function fetchConfig() {
+        try {
+            const response = await fetch('http://localhost:5000/api/config');
+            const config = await response.json();
+            const subtitleElement = document.getElementById('subtitle');
+            const logoElement = document.getElementById('logo');
+            getTimeRanges().then(data=>{
+                if(data){
+                    if(config[0].status == true){
+                        document.getElementById("controler").style.display= "block"
+                        if (config[0].text) {
+                            subtitleElement.innerText = config[0].text;
+                            subtitleElement.style.display = 'block';
+                        } else {
+                            subtitleElement.style.display = 'none';
+                        }
+            
+                        if (config[0].logo) {
+                            const logoFileName = config[0].logo.split('\\').pop();
+                            logoElement.src = `http://localhost:5000/api/config/pic/${logoFileName}`;
+                            logoElement.style.display = 'block';
+                        } else {
+                            logoElement.style.display = 'none';
+                        }
+                    }else{
+                        console.log("hello");
+                        document.getElementById("off").textContent= "پلیر ها خاموش هستند"
+                        document.getElementById("controler").style.display= "none"
+                        return
+                    }
+                }else{
+                    console.log("hello");
+                    document.getElementById("off").textContent= "پلیر ها خاموش هستند"
+                    document.getElementById("controler").style.display= "none"
+                    return
+                }
+            })
+
+
+        } catch (error) {
+            console.error("خطا در دریافت کانفیگ:", error);
+        }
+    }
+
+    async function fetchVideos() {
+        let today = getPersianDate();
+        console.log(today);
+        today = convertPersianNumbersToEnglish(today);
+        try {
+            const response = await fetch(`http://localhost:5000/api/schedule/${today}`);
+            const data = await response.json();
+            videos = data.flatMap(item => item.Playlist.Videos).sort((a, b) => a.PlaylistVideo.order - b.PlaylistVideo.order);
+            videoLength = await videos.length
+            if (videos.length > 0) {
+                videos.forEach(video => {
+                    videoPlayCounts[video.originalName] = 0;
+                });
+                displayVideoList();
+                console.log("ویدیوها بارگذاری شدند");
+            } else {
+                console.log("هیچ ویدیویی یافت نشد");
+            }
+        } catch (error) {
+            console.error("خطا در دریافت ویدیوها:", error);
+        }
+    }
+
+    function displayVideoList() {
+        const videoListElement = document.getElementById('videoList');
+        videoListElement.innerHTML = '<h3>لیست ویدیوها:</h3>';
+        videos.forEach(video => {
+            const videoItem = document.createElement('div');
+            videoItem.textContent = video.originalName;
+            videoListElement.appendChild(videoItem);
+        });
+        // videoListElement.style.display = 'block';
+    }
+
+    function playVideo(index) {
+        const videoElement = document.getElementById("videoPlayer");
+        const videoName = videos[index].originalName;
+        console.log(`پخش ویدیو: ${videoName}`);
+        videoElement.src = `http://localhost:5000/api/vid/${videoName}`;
+        videoElement.play();
+        
+        videoElement.onended =async () => {
+            playCount++;
+            videoPlayCounts[videoName] = (videoPlayCounts[videoName] || 0) + 1;
+            console.log(videoPlayCounts);
+            console.log(videoLength);
+            if (playCount >= videoLength) {
+                await sendPlayCount();
+                playCount = 0;
+                // Reset video play counts
+                Object.keys(videoPlayCounts).forEach(key => {
+                    videoPlayCounts[key] = 0;
+                });
+            }
+            currentIndex = (currentIndex + 1) % videos.length;
+            if (currentIndex === 0) {
+                resetToInitialState(); // Reset to initial state after all videos have been played
+            } else {
+                playVideo(currentIndex);
+            }
+        };
+    }
+
+    async function sendPlayCount() {
+    
+    const date = getPersianDate();
+    try {
+        // دریافت لیست ویدیوها
+        
+        const videoResponse = await fetch('http://localhost:5000/api/video');
+        const videoList = await videoResponse.json();
+        let today = getPersianDate();
+        today = convertPersianNumbersToEnglish(today);
+
+        for (const [videoName, playCount] of Object.entries(videoPlayCounts)) {
+            // پیدا کردن ویدیو در لیست ویدیوها
+            const video = videoList.find(v => v.originalName === videoName);
+            if (!video) {
+                console.error(`Video not found: ${videoName}`);
+                continue;
+            }
+
+            const viewData = {
+                date:today,
+                playerId: deviceInfo.id,
+                videoId: video.id,
+                playCount: playCount
+            };
+
+            const result = await fetch("http://localhost:5000/api/view", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(viewData)
+            });
+
+            if (!result.ok) {
+                console.error(`Failed to send play count for video: ${videoName}`);
+            }
+        }
+    } catch (error) {
+        console.error("Error sending play count:", error);
+    }
+}
+  
+    async function resetToInitialState() {
+        // document.getElementById('playButton').style.display = 'block';
+        // document.getElementById('videoPlayer').style.display = 'none';
+        // document.getElementById('subtitle').style.display = 'none';
+        // document.getElementById('logo').style.display = 'none';
+        // document.getElementById('videoList').style.display = 'none';
+        currentIndex = 0;
+        await fetchConfig();
+        await fetchVideos();
+        document.getElementById('videoPlayer').style.display = 'block';
+        playVideo(currentIndex);
+    }
+
+    document.getElementById('playButton').addEventListener('click', async function() {
+        this.style.display = 'none';
+        await fetchConfig();
+        await fetchVideos();
+        document.getElementById('videoPlayer').style.display = 'block';
+        playVideo(currentIndex);
+    });
+
+    fetchVideos();
+</script>
+    </body>
+</html>

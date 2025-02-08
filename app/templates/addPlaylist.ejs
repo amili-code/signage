@@ -1,0 +1,144 @@
+<%- include('./layout/head'); %>
+<main class="main">
+
+    <!-- Breadcrumb -->
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">پلی لیست</li>
+        <li class="breadcrumb-item ">افزودن پلی لیست</li>
+
+        <!-- <li class="breadcrumb-menu">
+                <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
+                    <a class="btn btn-secondary" href="#"><i class="icon-speech"></i></a>
+                    <a class="btn btn-secondary" href="./"><i class="icon-graph"></i> &nbsp;داشبرد</a>
+                    <a class="btn btn-secondary" href="#"><i class="icon-settings"></i> &nbsp;تنظیمات</a>
+                </div>
+            </li> -->
+    </ol>
+
+    <div class="container-fluid">
+
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id>
+                <form id="playlistForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">نام
+                            پلی‌لیست:</label>
+                        <input type="text" id="name" name="name"
+                            class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="type" class="form-label">نوع
+                            پلی‌لیست:</label>
+                        <select id="type" name="type" class="form-control">
+                            <option value="main">اصلی</option>
+                            <option value="ad">تبلیغاتی</option>
+                            <option value="special">مناسبتی</option>
+                        </select>
+                    </div>
+
+                    <!-- <div class="mb-3">
+                        <label for="picture" class="form-label">تصویر پلی‌لیست
+                            (اختیاری):</label>
+                        <input type="file" id="picture" name="picture"
+                            class="form-control" accept="image/*">
+                    </div> -->
+
+                    <div class="mb-5">
+                        <label class="form-label">انتخاب ویدیوها:</label>
+                        <div id="videoList" class="row"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">ایجاد
+                        پلی‌لیست</button>
+                </form>
+
+                <div id="message" class="mt-3"></div>
+            </div>
+        </div>
+
+    </div>
+    <!--/.container-fluid-->
+
+    <script>
+    document.addEventListener("DOMContentLoaded", fetchVideos);
+
+    // دریافت لیست ویدیوها از API و نمایش در قالب چک‌باکس
+    async function fetchVideos() {
+        try {
+            const response = await fetch("http://localhost:5000/api/video");
+            if (!response.ok) throw new Error("خطا در دریافت ویدیوها");
+            const videos = await response.json();
+
+            const videoListDiv = document.getElementById("videoList");
+            videoListDiv.innerHTML = "";
+
+            videos.forEach(video => {
+                const videoCard = document.createElement("div");
+                videoCard.className = "col-md-2 mb-5";
+                videoCard.innerHTML = `
+                    <div class="card">
+                        <img src="http://localhost:5000/api/thumbnail/${video.originalName}" style="width:100%" class="card-img-top" alt="${video.title}">
+                        <div class="card-body" style="text-align:center">
+                            <br>
+                            <h4 class="card-title">${video.title}</h4>
+                            <p class="card-text">مدت زمان: ${video.duration.toFixed(2)} ثانیه</p>
+                           
+                                <label class="switch switch-icon switch-info">
+                                    <input name='videos' type="checkbox" class="switch-input" value="${video.id}">
+                                    <span class="switch-label" data-on="" data-off=""></span>
+                                    <span class="switch-handle"></span>
+                                </label>
+                        </div>
+                    </div>
+                `;
+                videoListDiv.appendChild(videoCard);
+            });
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    // ارسال اطلاعات فرم به سرور
+    document.getElementById("playlistForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+        console.log("object");
+        const formData = new FormData();
+        formData.append("name", document.getElementById("name").value);
+        formData.append("type", document.getElementById("type").value);
+        
+        // const pictureInput = document.getElementById("picture");
+        // if (pictureInput.files.length > 0) {
+        //     formData.append("picture", pictureInput.files[0]);
+        // }
+
+        // جمع‌آوری ویدیوهای انتخاب‌شده
+        const selectedVideos = [...document.querySelectorAll("input[name='videos']:checked")].map(v => v.value);
+        selectedVideos.forEach(videoId => {
+            formData.append("videos[]", videoId); // هر مقدار را جداگانه ارسال کن
+        });// هر مقدار را جداگانه ارسال کن
+        try {
+            const response = await fetch("http://localhost:5000/api/playlist", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            const messageDiv = document.getElementById("message");
+
+            if (response.ok) {
+                messageDiv.innerHTML = `<hr><div class="alert alert-success">${result.message}</div>`;
+                document.getElementById("playlistForm").reset();
+            } else {
+                messageDiv.innerHTML = `<hr><div class="alert alert-danger">خطا: ${result.message}</div>`;
+            }
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    });
+    </script>
+</main>
+<%- include('./layout/footer'); %>

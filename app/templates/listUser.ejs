@@ -1,0 +1,195 @@
+<%- include('./layout/head'); %>
+
+    <!-- Main content -->
+    <main class="main">
+
+        <!-- Breadcrumb -->
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">خانه</a></li>
+            <li class="breadcrumb-item active">کاربران</li>
+            <li class="breadcrumb-item ">لیست کاربر</li>
+
+            <!-- <li class="breadcrumb-menu">
+                <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
+                    <a class="btn btn-secondary" href="#"><i class="icon-speech"></i></a>
+                    <a class="btn btn-secondary" href="./"><i class="icon-graph"></i> &nbsp;داشبرد</a>
+                    <a class="btn btn-secondary" href="#"><i class="icon-settings"></i> &nbsp;تنظیمات</a>
+                </div>
+            </li> -->
+        </ol>
+
+        <div class="container-fluid">
+
+            <div class="animated fadeIn">
+                <div class="row container-fluid" id="addUser">
+                    <input type="text" id="searchInput" class="form-control mb-3 input-sm" placeholder="جستجو بر اساس نام کاربر..." oninput="renderTable()">
+                    <br>
+                    <div class="card">
+    <div class="card-header">
+        <i class="fa fa-align-justify"></i> جدول <strong>کاربران</strong>
+    </div>
+    <div class="card-body">
+        
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th style="cursor:pointer">نام کاربری </th>
+                    <th onclick="sortTable('createdAt')" style="cursor:pointer">تاریخ ایجاد 🔽</th>
+                    <th>سطح دسترسی</th>
+                    <th>حذف</th>
+                </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+        <div class="row" style="text-align: center;">
+            <ul id="pagination" class="pagination"></ul>
+        </div>
+    </div>
+</div>
+
+                </div>
+            </div>
+
+        </div>
+        <!--/.container-fluid-->
+    </main>
+
+
+
+
+
+<script>
+    let usersData = []; // ذخیره اطلاعات کاربران برای مدیریت بهتر
+let currentPage = 1;
+const rowsPerPage = 5; // تعداد کاربران در هر صفحه
+
+async function fetchAndPopulateTable() {
+    try {
+        const response = await fetch("http://localhost:5000/api/user");
+        if (!response.ok) throw new Error("مشکلی در دریافت اطلاعات به وجود آمده است.");
+
+        usersData = await response.json();
+        renderTable(); // نمایش جدول پس از دریافت داده‌ها
+
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+// تابع نمایش داده‌ها در جدول
+function renderTable() {
+    const tableBody = document.getElementById("userTable");
+    tableBody.innerHTML = "";
+
+    // جستجو و صفحه‌بندی داده‌ها
+    let filteredData = searchUsers(usersData);
+    let paginatedData = paginate(filteredData);
+
+    paginatedData.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${user.name}</td>
+            <td>${convertToPersianDate(user.createdAt)}</td>
+            <td>${getUserRole(user.email)}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">حذف</button>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    renderPagination(filteredData.length);
+}
+
+// تابع تبدیل تاریخ میلادی به شمسی
+function convertToPersianDate(isoDate) {
+    const date = new Date(isoDate);
+    return new Intl.DateTimeFormat("fa-IR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    }).format(date);
+}
+
+// تابع تعیین نقش کاربر بر اساس ایمیل
+function getUserRole(email) {
+    if (email.includes("admin")) return "مدیر";
+    if (email.includes("staff")) return "کارمند";
+    return "کاربر عادی";
+}
+
+// تابع حذف کاربر
+async function deleteUser(userId) {
+    try {
+        const response = await fetch(`http://localhost:5000/api/user/${userId}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) throw new Error("حذف کاربر ناموفق بود!");
+
+        usersData = usersData.filter(user => user.id !== userId);
+        renderTable(); // به‌روزرسانی جدول پس از حذف
+
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+// تابع مرتب‌سازی داده‌ها
+function sortTable(column) {
+    let order = column === "name" ? "asc" : "desc";
+
+    usersData.sort((a, b) => {
+        let valA = column === "name" ? a.name.toLowerCase() : new Date(a.createdAt);
+        let valB = column === "name" ? b.name.toLowerCase() : new Date(b.createdAt);
+
+        return order === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+    });
+
+    renderTable();
+}
+
+// تابع صفحه‌بندی داده‌ها
+function paginate(data) {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return data.slice(start, end);
+}
+
+// تابع جستجوی کاربران بر اساس نام
+function searchUsers(data) {
+    const searchInput = document.getElementById("searchInput").value.toLowerCase();
+    return data.filter(user => user.name.toLowerCase().includes(searchInput));
+}
+
+// تابع مدیریت صفحه‌بندی
+function changePage(page) {
+    currentPage = page;
+    renderTable();
+}
+
+// تابع نمایش دکمه‌های صفحه‌بندی
+function renderPagination(totalItems) {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+
+    let totalPages = Math.ceil(totalItems / rowsPerPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+        pagination.innerHTML += `
+            <li class="page-item ${i === currentPage ? "active" : ""}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>
+        `;
+    }
+}
+
+// اجرای اولیه برای پر کردن جدول
+fetchAndPopulateTable();
+
+</script>
+    
+
+
+
+<%- include('./layout/footer'); %>

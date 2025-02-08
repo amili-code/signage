@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="IR-fa" dir="rtl">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="CoreUI Bootstrap 4 Admin Template">
+        <meta name="author" content="Lukasz Holeczek">
+        <meta name="keyword" content="CoreUI Bootstrap 4 Admin Template">
+        <!-- <link rel="shortcut icon" href="assets/ico/favicon.png"> -->
+        <title>پنل مانیتورینگ</title>
+        <!-- Icons -->
+        <link href="css/font-awesome.min.css" rel="stylesheet">
+        <link href="css/simple-line-icons.css" rel="stylesheet">
+        <!-- Main styles for this application -->
+        <link href="dest/style.css" rel="stylesheet">
+    </head>
+
+    <body class="navbar-fixed sidebar-nav fixed-nav">
+        <header class="navbar">
+            <div class="container-fluid">
+                <button class="navbar-toggler mobile-toggler hidden-lg-up"
+                    type="button">&#9776;</button>
+                <a class="navbar-brand" href="#"></a>
+                <ul class="nav navbar-nav hidden-md-down">
+                    <li class="nav-item">
+                        <a class="nav-link navbar-toggler layout-toggler blue"
+                            href="#">&#9776;</a>
+                    </li>
+
+                </ul>
+                <ul class="nav navbar-nav pull-left hidden-md-down">
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle nav-link"
+                            data-toggle="dropdown" href="#" role="button"
+                            aria-haspopup="true" aria-expanded="false">
+                            <span class="hidden-md-down"><%= name %></span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <div class="dropdown-header text-xs-center">
+                                <strong>تنظیمات</strong>
+                            </div>
+                            <!-- <a class="dropdown-item" href="#"><i
+                                    class="fa fa-user"></i> پروفایل</a>
+                            <a class="dropdown-item" href="#"><i
+                                    class="fa fa-wrench"></i> تنظیمات</a> -->
+                            <!--<a class="dropdown-item" href="#"><i class="fa fa-usd"></i> Payments<span class="tag tag-default">42</span></a>-->
+                            <div class="divider"></div>
+                            <a class="dropdown-item" href="/api/logout"><i
+                                    class="fa fa-lock"></i> خروج</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                    </li>
+
+                </ul>
+            </div>
+        </header>
+        <div class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i
+                                class="icon-speedometer"></i> داشبرد <span
+                                class="tag tag-info">جدید</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/setting"><i
+                                class="icon-speedometer"></i> تنظیمات <span
+                                class="tag tag-danger">مهم</span></a>
+                    </li>
+
+                    <li class="nav-title">
+                        مدیریت کاربران
+                    </li>
+
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle"><i
+                                class="icon-user"></i> کاربران</a>
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/add-user"><i
+                                        class="icon-star"></i> ثبت کاربر</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/list-user"><i
+                                        class="icon-star"></i> لیست کاربران</a>
+                            </li>
+                            <!-- <li class="nav-item">
+                                <a class="nav-link"
+                                    href="icons-simple-line-icons.html"><i
+                                        class="icon-star"></i> دسترسی
+                                    کاربران</a>
+                            </li> -->
+                        </ul>
+                    </li>
+                    <li class="nav-title">
+                        مدیریت ویدیو ها
+                    </li>
+
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" ><i
+                                class="icon-film"></i> ویدیوها</a>
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/add-video"><i
+                                        class="icon-star"></i> افزودن ویدیو</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/list-video"><i
+                                        class="icon-star"></i> لیست ویدیو ها</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-title">
+                        مدیریت پلی لیست ها
+                    </li>
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" ><i
+                                class="icon-diamond"></i> پلی لیست ها</a>
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                href="/list-playlist"><i
+                                class="icon-star"></i>  لیست پلی لیست ها</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                href="/add-playlist"><i
+                                class="icon-star"></i> افزودن پلی لیست
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link"
+                                href="/list-playlist-special"><i
+                                    class="icon-star"></i> پلی لیست
+                                مناسبتی</a>
+                        </li>
+                        </ul>
+                    </li>
+                    <li class="nav-title">
+                        مدیریت پلیر ها
+                    </li>
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle"><i
+                                class="icon-frame"></i> پلیرها</a>
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/add-player"><i
+                                        class="icon-star"></i> افزودن پلیر</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/list-player"><i
+                                        class="icon-star"></i> لیست پلیر ها</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-title">
+                        گزارشات
+                    </li>
+                    <li class="nav-item nav-dropdown">
+                        <a class="nav-link nav-dropdown-toggle" href="#"><i
+                                class="icon-eye"></i> گزارش</a>
+                        <ul class="nav-dropdown-items">
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/user-news"><i
+                                        class="icon-star"></i> کاربران</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/playlist-news"><i
+                                        class="icon-star"></i> پلیر ها</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="/video-news"><i
+                                        class="icon-star"></i> ویدیوها</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                </ul>
+            </nav>
+        </div>
+        <!-- Main content -->

@@ -1,0 +1,99 @@
+<%- include('./layout/head'); %>
+
+<main class="main">
+
+    <!-- Breadcrumb -->
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">ویدیو ها</li>
+        <li class="breadcrumb-item ">افزودن ویدیو</li>
+    </ol>
+
+    <div class="container-fluid">
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id="addUser">
+                <div class="card">
+                    <div class="card-header">
+                        افزودن
+                        <strong>ویدیو</strong>
+                    </div>
+                    <div class="card-block">
+                        <form id="addVideoForm" class="form-horizontal">
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label" for="video">فایل ویدیو را وارد کنید</label>
+                                <div class="col-sm-6">
+                                    <input type="file" id="video" accept="video/*" name="video" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 form-control-label" for="title">عنوان ویدیو جدید را وارد کنید</label>
+                                <div class="col-sm-6">
+                                    <input type="text" id="title" name="title" class="form-control input-sm" placeholder="عنوان را وارد کنید ...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-sm btn-primary" id="submitButton"><i class="fa fa-dot-circle-o"></i> ثبت اطلاعات</button>
+                            <button type="reset" class="btn btn-sm btn-danger"><i class="fa fa-ban"></i> پاک کردن اطلاعات وارد شده</button>
+                        </div>
+                        </form>
+                        <div id="resultMessage" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--/.container-fluid-->
+</main>
+
+<script>
+    document.getElementById('addVideoForm').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const title = document.getElementById('title').value.trim();
+        const videoFile = document.getElementById('video').files[0];
+        const resultMessage = document.getElementById('resultMessage');
+        const submitButton = document.getElementById('submitButton');
+
+        if (!title) {
+            resultMessage.innerHTML = '<div class="alert alert-danger">عنوان ویدیو نمی‌تواند خالی باشد.</div>';
+            return;
+        }
+
+        if (!videoFile) {
+            resultMessage.innerHTML = '<div class="alert alert-danger">لطفاً یک فایل ویدیو انتخاب کنید.</div>';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('video', videoFile);
+
+        // اضافه کردن حالت لودینگ به دکمه ثبت
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> در حال ثبت...';
+
+        try {
+            const response = await fetch('http://localhost:5000/api/video', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                resultMessage.innerHTML = '<div class="alert alert-success">ویدیو با موفقیت ذخیره شد.</div>';
+                document.getElementById('addVideoForm').reset();
+            } else {
+                resultMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+            }
+        } catch (error) {
+            resultMessage.innerHTML = `<div class="alert alert-danger">خطایی رخ داده است: ${error.message}</div>`;
+        } finally {
+            // حذف حالت لودینگ از دکمه ثبت
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fa fa-dot-circle-o"></i> ثبت اطلاعات';
+        }
+    });
+</script>
+
+<%- include('./layout/footer'); %>
