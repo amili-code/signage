@@ -1,62 +1,64 @@
 <%- include('./layout/head'); %>
 
-    <!-- Main content -->
-    <main class="main">
+<!-- Main content -->
+<main class="main">
 
-        <!-- Breadcrumb -->
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">خانه</a></li>
-            <li class="breadcrumb-item active">کاربران</li>
-            <li class="breadcrumb-item ">لیست کاربر</li>
+    <!-- Breadcrumb -->
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">خانه</a></li>
+        <li class="breadcrumb-item active">کاربران</li>
+        <li class="breadcrumb-item ">لیست کاربر</li>
 
-            <!-- <li class="breadcrumb-menu">
+        <!-- <li class="breadcrumb-menu">
                 <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
                     <a class="btn btn-secondary" href="#"><i class="icon-speech"></i></a>
                     <a class="btn btn-secondary" href="./"><i class="icon-graph"></i> &nbsp;داشبرد</a>
                     <a class="btn btn-secondary" href="#"><i class="icon-settings"></i> &nbsp;تنظیمات</a>
                 </div>
             </li> -->
-        </ol>
+    </ol>
 
-        <div class="container-fluid">
+    <div class="container-fluid">
 
-            <div class="animated fadeIn">
-                <div class="row container-fluid" id="addUser">
-                    <input type="text" id="searchInput" class="form-control mb-3 input-sm" placeholder="جستجو بر اساس نام کاربر..." oninput="renderTable()">
-                    <br>
-                    <div class="card">
-    <div class="card-header">
-        <i class="fa fa-align-justify"></i> جدول <strong>کاربران</strong>
-    </div>
-    <div class="card-body">
-        
-        <table class="table table-condensed">
-            <thead>
-                <tr>
-                    <th style="cursor:pointer">نام کاربری </th>
-                    <th onclick="sortTable('createdAt')" style="cursor:pointer">تاریخ ایجاد 🔽</th>
-                    <th>سطح دسترسی</th>
-                    <th>حذف</th>
-                </tr>
-            </thead>
-            <tbody id="userTable"></tbody>
-        </table>
-        <div class="row" style="text-align: center;">
-            <ul id="pagination" class="pagination"></ul>
-        </div>
-    </div>
-</div>
+        <div class="animated fadeIn">
+            <div class="row container-fluid" id="addUser">
+                <input type="text" id="searchInput"
+                    class="form-control mb-3 input-sm"
+                    placeholder="جستجو بر اساس نام کاربر..."
+                    oninput="renderTable()">
+                <br>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-align-justify"></i> جدول
+                        <strong>کاربران</strong>
+                    </div>
+                    <div class="card-body">
 
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th style="cursor:pointer">نام کاربری </th>
+                                    <th onclick="sortTable('createdAt')"
+                                        style="cursor:pointer">تاریخ ایجاد
+                                        🔽</th>
+                                    <th>سطح دسترسی</th>
+                                    <th>حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTable"></tbody>
+                        </table>
+                        <div class="row" style="text-align: center;">
+                            <ul id="pagination" class="pagination"></ul>
+                        </div>
+                    </div>
                 </div>
+
             </div>
-
         </div>
-        <!--/.container-fluid-->
-    </main>
 
-
-
-
+    </div>
+    <!--/.container-fluid-->
+</main>
 
 <script>
     let usersData = []; // ذخیره اطلاعات کاربران برای مدیریت بهتر
@@ -121,18 +123,21 @@ function getUserRole(email) {
 // تابع حذف کاربر
 async function deleteUser(userId) {
     try {
-        const response = await fetch(`http://localhost:5000/api/user/${userId}`, {
-            method: "DELETE",
-        });
+        if(confirm("از حذف این کاربر اطمینان دارید؟")){
+            const response = await fetch(`http://localhost:5000/api/user/${userId}`, {
+                method: "DELETE",
+            });
 
-        if (!response.ok) throw new Error("حذف کاربر ناموفق بود!");
+            if (!response.ok) throw new Error("حذف کاربر ناموفق بود!");
 
-        usersData = usersData.filter(user => user.id !== userId);
-        renderTable(); // به‌روزرسانی جدول پس از حذف
+            usersData = usersData.filter(user => user.id !== userId);
+            renderTable(); // به‌روزرسانی جدول پس از حذف
+        }   
 
     } catch (error) {
         console.log(error.message);
     }
+
 }
 
 // تابع مرتب‌سازی داده‌ها
@@ -188,8 +193,5 @@ function renderPagination(totalItems) {
 fetchAndPopulateTable();
 
 </script>
-    
-
-
 
 <%- include('./layout/footer'); %>

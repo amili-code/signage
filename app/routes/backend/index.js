@@ -20,6 +20,7 @@ const configController = require("app/api/config");
 const viewsController = require("app/api/views");
 
 router.post('/register', userController.register.bind(userController))
+router.post('/new-user', userController.newUser.bind(userController))
 router.post('/login', userController.login.bind(userController))
 router.get('/logout', userController.logout.bind(userController))
 

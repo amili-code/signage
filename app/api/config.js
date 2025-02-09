@@ -31,14 +31,10 @@ class Confige {
         }
     }
 
-   async  pic(req, res) {
+    async pic(req, res) {
         try {
-            const filePath = path.join(__dirname, 'app/videos/config', req.params.name);
-
-            // بررسی وجود فایل
-            await fs.access(filePath);
-
-            res.sendFile(filePath);
+            await fs.access("app/videos/config/1.png");
+            res.sendFile("app/videos/config/1.png", { root: "." });
         } catch (error) {
             // در صورت عدم وجود فایل، خطا را مدیریت کنید
             res.status(404).send('File not found');
@@ -64,6 +60,6 @@ class Confige {
         }
     }
 
-    
+
 }
 module.exports = new Confige();

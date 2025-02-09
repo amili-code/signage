@@ -21,6 +21,24 @@ class userController {
         }
     }
 
+
+    async newUser(req, res) {
+        try {
+            // هش کردن پسورد قبل از ذخیره در دیتابیس
+            req.body.password = await hashPassword(req.body.password);
+
+            // ایجاد کاربر جدید
+            const user = await User.create(req.body);
+
+            // تولید توکن JWT
+            const token = generateToken(user);
+            req.session.token = token
+            res.redirect('/')
+        } catch (error) {
+            res.status(400).json({ message: "خطا در ایجاد کاربر", error });
+        }
+    }
+
     async logout(req, res) {
         req.session.token = ''
         res.redirect('/')
